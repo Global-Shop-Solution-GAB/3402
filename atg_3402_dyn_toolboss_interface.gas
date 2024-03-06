@@ -1,0 +1,468 @@
+Program.Sub.ScreenSU.Start
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+
+Variable.Global.sFile.Declare(String)
+Variable.Global.bDir.Declare(Boolean,false)
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+
+V.Local.sQuery.Declare(String)
+V.Local.sCMFile.Declare(String)
+V.Local.iHandleA.Declare(Long)
+V.Local.iHandleB.Declare(Long)
+V.Local.sFilelIst.Declare(String)
+V.Local.sDirectory.Declare(String)
+V.Local.sEndDir.Declare(String)
+V.Local.sImports.Declare(String)
+V.Local.iCount.Declare(Long)
+V.Local.sFile.Declare(String)
+V.Local.sName.Declare(String)
+V.Local.bTrue.Declare(Boolean)
+V.Local.bexists.Declare(String)
+V.Local.iFileCount.Declare(Long)
+V.Local.sParams.Declare(String)
+V.Local.iret.Declare(Long)
+V.Local.sExceptDir.Declare(String)
+
+
+
+'Opens ODBC connection
+Function.Odbc.Connection!Con.Openconnection(Variable.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+
+'Clears existing data for the calling Terminal
+F.Intrinsic.String.Concat("DELETE FROM ATG_3402_RCPTS_TO_WO WHERE TERMINAL = '",V.Caller.Terminal,"'",V.Local.squery)
+F.ODBC.Connection!Con.Execute(V.Local.sQuery)
+
+F.Intrinsic.File.GetHandle(V.Local.iHandleA)
+F.Intrinsic.File.GetHandle(V.Local.iHandleB)
+
+
+V.Local.sDirectory.Set("V:\Vending\")
+'V.local.sDirectory.Set("C:\Vending\")
+F.Intrinsic.File.DirExists(V.Local.sDirectory,V.Local.bExists)
+	F.Intrinsic.Control.If(V.Local.bExists,=,False)
+		F.Intrinsic.UI.Msgbox("Cannot Access Vending directory")
+		F.Intrinsic.Control.End
+	F.Intrinsic.Control.EndIf
+
+
+'check for Import\Complete directory; create is not present
+V.Local.sEndDir.Set("V:\Vending History\")
+'V.Local.sEndDir.Set("C:\Vending\Vending History\")
+F.Intrinsic.File.DirExists(V.Local.sEndDir,V.Local.bExists)
+	F.Intrinsic.Control.If(V.Local.bExists,=,False)
+		F.Intrinsic.UI.Msgbox("Cannot Access Vending History directory")
+		F.Intrinsic.Control.End
+	F.Intrinsic.Control.EndIf
+
+'check for Import\Complete directory; create is not present
+V.Local.sExceptDir.Set("V:\Vending Exceptions\")
+'V.Local.sExceptDir.Set("C:\Vending\Vending Exceptions\")
+F.Intrinsic.File.DirExists(V.Local.sExceptDir,V.Local.bExists)
+	F.Intrinsic.Control.If(V.Local.bExists,=,False)
+		F.Intrinsic.UI.Msgbox("Cannot Access Vending Exceptions directory")
+		F.Intrinsic.Control.End
+	F.Intrinsic.Control.EndIf
+
+
+'get the file list from the "Import"directory
+F.Intrinsic.File.GetFileList(V.Local.sDirectory,1,V.Local.sFile)
+F.Intrinsic.String.Split(V.Local.sFile,":",V.Local.sName)
+
+F.Intrinsic.Control.If(V.Local.sName(0),=,"")
+	F.Intrinsic.UI.Msgbox("No Upload Files Found")
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.UI.InvokeWaitDialog("Uploading Work Order Data","Tool Bos Interface")
+
+'for each file...
+F.Intrinsic.Control.For(V.Local.iFileCount,V.Local.sName.LBound,V.Local.sName.UBound,1)
+
+	F.Intrinsic.String.Concat(V.Local.sDirectory,V.Local.sName(V.Local.iFileCount),V.Local.sFile)
+	F.Intrinsic.String.Concat(V.Local.sEndDir,V.Local.sName(V.Local.iFileCount),V.Global.sFile)
+
+	F.Intrinsic.File.CopyFile(V.Local.sFile,V.Global.sFile)
+	F.Intrinsic.File.DeleteFile(V.Local.sFile)
+
+	F.Intrinsic.Control.CallSub(Openfile_wir100,"Directory",V.Local.sDirectory,"Except",V.Local.sExceptDir)
+
+F.Intrinsic.Control.Next(V.Local.iFileCount)
+
+F.Intrinsic.UI.CloseWaitDialog
+
+
+'print the report
+F.Intrinsic.Control.CallSub(Printreport,"param",V.Args.param)
+
+Program.Sub.Main.End
+
+Program.Sub.Openfile_wir100.Start
+
+V.Local.sSQL.Declare(String)
+V.Local.sData.Declare(String)
+V.Local.sLines.Declare(String)
+V.Local.sLine.Declare(String)
+V.Local.sInv.Declare(String)
+V.Local.sSel.Declare(String)
+
+V.Local.iC.Declare(Long)
+V.Local.iX.Declare(Long)
+V.Local.iHndl.Declare(Long)
+V.Local.iHndlA.Declare(Long)
+V.Local.iHndlB.Declare(Long)
+V.Local.lRows.Declare(Long)
+V.Local.iWait.Declare(Long)
+
+V.Local.sA.Declare(String)
+V.Local.sB.Declare(String)
+V.Local.sC.Declare(String)
+V.Local.sD.Declare(String)
+V.Local.sE.Declare(String)
+V.Local.sF.Declare(String)
+
+V.Local.sFile.Declare(String)
+V.Local.sExcept.Declare(String)
+V.Local.sPart.Declare(String)
+V.Local.sDescription.Declare(String)
+V.Local.sDate.Declare(String)
+V.Local.sTime.Declare(String)
+V.Local.sEmp.Declare(String)
+V.Local.sJob.Declare(String)
+V.Local.sSuffix.Declare(String)
+V.Local.sSeq.Declare(String)
+V.Local.sQuantity.Declare(String)
+V.Local.sCost.Declare(String)
+V.Local.sDateClosed.Declare(String)
+V.Local.sFiller.Declare(String)
+
+V.Local.sSplit.Declare(String)
+
+V.Local.sPrtDte.Declare(String)
+V.Local.sprtTime.Declare(String)
+V.Local.sprntCost.Declare(String)
+V.Local.sExceptFile.Declare(String)
+V.Local.sReason.Declare(String)
+
+V.Local.bExists.Declare(Boolean)
+V.Local.bJob.Declare(Boolean)
+V.Local.bClosed.Declare(Boolean)
+
+V.Local.iHndl.Set(V.Caller.Handle)
+V.Local.lLine.Declare(Long)
+
+F.Intrinsic.String.Replace(V.Ambient.Date,"/","",V.Local.sExceptFile)
+F.Intrinsic.String.Concat("Exceptions",V.Local.sExceptFile,V.Local.sExceptFile)
+
+
+V.Local.iWait.Set(0)
+F.Automation.MSExcel.CreateAppObject("MSExcel")
+F.Automation.MSExcel.OpenWorkbook("MSExcel","WKBK",V.Global.sFile)
+F.Automation.MSExcel.OpenWorksheet("WKBK","Sheet1","1")
+F.Automation.MSExcel.RowCount("Sheet1",V.Local.lRows)
+	F.Intrinsic.Math.add(V.Local.lRows,1,V.Local.lRows)
+
+'F.Intrinsic.Debug.InvokeDebugger
+'organize data from .xls file.  Split data into separate lines; determine line count for array
+F.Intrinsic.Control.For(V.Local.iC,1,V.Local.lRows,1)
+F.Intrinsic.Math.Add(V.Local.iWait,1,V.Local.iWait)
+F.Intrinsic.UI.ChangeWaitStatus("Uploading Work Order Data",V.Local.iWait,1,V.Local.lRows)
+	F.Automation.MSExcel.ReadRow("Sheet1",V.Local.iC,1,10,V.Local.sLine)
+F.Intrinsic.Debug.Stop
+		F.Intrinsic.String.Split(V.Local.sLine,"*!*",V.Local.sD)
+
+					F.Intrinsic.Control.For(V.Local.iX,V.Local.sD.LBound,V.Local.sD.UBound,1)
+				F.Intrinsic.String.Split(V.Local.sD(0)," ",V.Local.sE)
+
+F.Intrinsic.Control.If(V.Local.sE(0),<>,"Dyna")
+	F.Intrinsic.Control.If(V.Local.sE(0),<>,"Transaction")
+		F.Intrinsic.Control.If(V.Local.sE(0),<>,"Sub")
+			F.Intrinsic.Control.If(V.Local.sE(0),<>,"")
+				F.Intrinsic.Control.If(V.Local.sE(0),<>,"Report")
+					F.Intrinsic.Control.If(V.Local.sE(0),<>,"QUALITY")
+'-------------------------------------------------------------------------------------------------------------------------------------------------
+'set field values based on determned cell values
+
+				F.Intrinsic.Control.If(V.Local.sE(0),=,"Job")
+					F.Intrinsic.String.LPad(V.Local.sD(2),"0",9,V.Local.sD(2))
+					F.Intrinsic.String.Left(V.Local.sD(2),6,V.Local.sJob)
+					F.Intrinsic.String.Right(V.Local.sD(2),3,V.Local.sSuffix)
+
+F.Intrinsic.Control.If(V.Local.sJob,>=,"010001")
+	F.Intrinsic.Control.If(V.Local.sJob,<=,"010046")
+		V.Local.bJob.Set(False)
+	F.Intrinsic.Control.Else
+		V.Local.bJob.Set(True)
+	F.Intrinsic.Control.EndIf
+'F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.elseIf(V.Local.sJob,=,"000IND")
+	V.Local.sJob.Set("INDL10")
+	V.Local.sSuffix.Set("")
+	V.Local.bJob.Set(False)
+F.Intrinsic.Control.ElseIf(V.Local.sJob,=,"000GLO")
+	V.Local.sJob.Set("GLOBAL")
+	V.Local.sSuffix.Set("")
+	V.Local.bJob.Set(False)
+F.Intrinsic.Control.Else
+
+	F.Intrinsic.String.Concat("Select * from JOB_HEADER where JOB='",V.Local.sJob,"'and SUFFIX='",V.Local.sSuffix,"'",V.Local.sF)
+	F.ODBC.Connection!Con.OpenRecordsetRO("rstF",V.Local.sF)
+		F.Intrinsic.Control.If(V.ODBC.Con!rstF.EOF,=,False)
+			V.Local.sDateClosed.Set(V.ODBC.Con!rstF.FieldVal!DATE_CLOSED)
+			F.Intrinsic.Control.If(V.ODBC.Con!rstF.FieldVal!DATE_CLOSED,=,000000)
+				V.Local.bClosed.Set(False)
+			F.Intrinsic.Control.Else
+				V.Local.bClosed.Set(True)
+			F.Intrinsic.Control.EndIf
+
+			V.Local.bJob.Set(True)
+		F.Intrinsic.Control.Else
+			V.Local.bJob.Set(False)
+		F.Intrinsic.Control.EndIf
+	F.ODBC.Con!rstF.Close
+
+F.Intrinsic.Control.EndIf
+				F.Intrinsic.Control.Else
+
+					V.Local.sPart.Set(V.Local.sD(1))
+						F.Intrinsic.String.Trim(V.Local.sPart,V.Local.sPart)
+						F.Intrinsic.String.Replace(V.Local.sPart," ","",V.Local.sPart)
+
+					V.Local.sDescription.Set(V.Local.sD(3))
+						F.Intrinsic.String.Trim(V.Local.sDescription,V.Local.sDescription)
+						F.Intrinsic.String.Left(V.Local.sDescription,30,V.Local.sDescription)
+
+					F.Intrinsic.String.Split(V.Local.sD(0)," ",V.Local.sSplit)
+					V.Local.sSplit.RedimPreserve(0,1)
+
+						V.Local.sDate.Set(V.Local.sSplit(0))
+							F.Intrinsic.String.Format(V.Local.sDate,"MMDDYYYY",V.Local.sPrtDte)
+
+						V.Local.sTime.Set(V.Local.sSplit(1))
+							F.Intrinsic.String.Replace(V.Local.sTime,"""","",V.Local.sTime)
+							F.Intrinsic.String.Trim(V.Local.sTime,V.Local.sTime)
+								V.Local.sPrtTime.Set(V.Local.sTime)
+
+					V.Local.sEmp.Set(V.Local.sD(4))
+						F.Intrinsic.String.Replace(V.Local.sEmp,"""","",V.Local.sEmp)
+						F.Intrinsic.String.Trim(V.Local.sEmp,V.Local.sEmp)
+						F.Intrinsic.String.LPad(V.Local.sEmp,"0",6,V.Local.sEmp)
+
+					V.Local.sSeq.Set("995000")
+
+					V.Local.sQuantity.Set(V.Local.sD(7))
+							F.Intrinsic.String.Trim(V.Local.sQuantity,V.Local.sQuantity)
+							F.Intrinsic.String.Format(V.Local.sQuantity,"0.0000",V.Local.sQuantity)
+
+					V.Local.sCost.Set(V.Local.sD(6))
+						F.Intrinsic.String.Trim(V.Local.sCost,V.Local.sCost)
+							V.Local.sprntCost.Set(V.Local.sCost)
+'				F.Intrinsic.Control.EndIf
+
+V.Local.sReason.Set("")
+F.Intrinsic.String.Concat("select PART from INVENTORY_MSTR where PART='",V.Local.sPart,"'",V.Local.sInv)
+F.ODBC.Connection!Con.OpenRecordsetRO("rstInv",V.Local.sInv)
+
+	F.Intrinsic.Control.If(V.ODBC.Con!rstInv.EOF,=,False)
+'	F.Intrinsic.Control.AndIf(V.Local.sjob,<>,"000000")
+	F.Intrinsic.Control.AndIf(V.Local.bJob,=,True)
+	F.Intrinsic.Control.AndIf(V.Local.bClosed,=,False)
+
+
+	'specify the tempory file for data; used when calling the Global program
+	F.Intrinsic.String.Concat(V.Caller.FilesDir,"\L",V.Caller.CompanyCode,V.Caller.Terminal,"CWTRANS.txt",V.Local.sFile)
+'	F.Intrinsic.String.Concat(V.Caller.FilesDir,"\WORKORDR.txt",V.Local.sFile)
+
+	'combine each separate line of selected data for writing to ASCII file	
+	F.Intrinsic.String.Concat(V.Local.sPart,",,,",V.Local.sQuantity,",","",",","",",","",",","",",",V.Local.sJob,",",V.Local.sSuffix,",",V.Local.sSeq,V.Local.sB)
+		V.Local.sFiller.Redim(0,10)
+
+	F.Intrinsic.File.GetHandle(V.Local.iHndlA)
+		F.Intrinsic.File.OpenForAppend(V.Local.sFile,V.Local.iHndlA)
+		F.Intrinsic.File.WriteLine(V.Local.iHndlA,V.Local.sB)
+		F.Intrinsic.File.CloseFile(V.Local.iHndlA)
+
+		Function.Intrinsic.String.Concat("Select * from ATG_3402_RCPTS_TO_WO where TERMINAL='",V.Caller.Terminal,"'order by DATE_ISSUE,TIME_ISSUE desc",Variable.Local.sSQL)
+		F.ODBC.Connection!Con.OpenRecordsetRW("rsta",V.Local.sSQL)
+		'Adds new detail line for the selected part
+					Function.ODBC.Con!rsta.AddNew
+						F.ODBC.Con!rsta.Set!TERMINAL(V.Caller.Terminal)
+						F.ODBC.con!rsta.Set!PART(V.Local.sPart)
+						F.ODBC.Con!rsta.Set!DESCRIPTION(V.Local.sDescription)
+						F.ODBC.Con!rsta.Set!DATE_ISSUE(V.Local.sDate)
+						F.ODBC.Con!rsta.Set!TIME_ISSUE(V.Local.sPrtTime)
+						F.ODBC.Con!rsta.Set!EMPLOYEE_NO(V.Local.sEmp)
+						F.ODBC.Con!rsta.Set!JOB(V.Local.sJob)
+						F.ODBC.Con!rsta.Set!SUFFIX(V.Local.sSuffix)
+						F.ODBC.Con!rsta.Set!SEQ(V.Local.sSeq)
+						F.ODBC.Con!rsta.Set!QTY(V.Local.sQuantity)
+						F.ODBC.Con!rsta.Set!COST(V.Local.sprntCost)
+					F.ODBC.Con!rsta.Update
+		F.ODBC.Con!rsta.Close
+
+	F.Intrinsic.Control.else
+
+		F.Intrinsic.Control.If(V.Local.sPart,<>,"")
+			V.Local.sReason.Set("Non Inventory Part")
+		F.Intrinsic.Control.EndIf
+
+		F.Intrinsic.Control.If(V.Local.bJob,=,False)
+			F.Intrinsic.String.Concat(V.Local.sReason,"\","Invalid Job#",V.Local.sReason)
+		F.Intrinsic.Control.EndIf
+
+		F.Intrinsic.Control.If(V.Local.bClosed,=,True)
+			F.Intrinsic.String.Concat(V.Local.sReason,"\Closed Job",V.Local.sReason)
+		F.Intrinsic.Control.EndIf
+
+	F.Intrinsic.File.GetHandle(V.Local.iHndlB)
+	F.Intrinsic.String.Concat(V.Local.sPart,",",V.Local.sDescription,",",V.Local.sPrtDte,",",V.Local.sprtTime,",",V.Local.sEmp,",",V.Local.sJob,",",V.Local.sSuffix,",",V.Local.sSeq,",",V.Local.sQuantity,",",V.Local.sCost,",",V.Local.sReason,V.Local.sC)
+		F.Intrinsic.String.Concat(V.Args.Except,"\",V.Local.sExceptFile,".csv",V.Local.sExcept)
+			V.Local.bExists.Set(False)
+			F.Intrinsic.File.Exists(V.Local.sExcept,V.Local.bExists)
+				F.Intrinsic.Control.If(V.Local.bExists,=,True)
+					F.Intrinsic.File.OpenForAppend(V.Local.sExcept,V.Local.iHndlB)
+				F.Intrinsic.Control.Else
+					F.Intrinsic.File.OpenForWrite(V.Local.sExcept,V.Local.iHndlB)
+				F.Intrinsic.Control.EndIf
+		F.Intrinsic.File.WriteLine(V.Local.iHndlB,V.Local.sC)
+	F.Intrinsic.File.CloseFile(V.Local.iHndlB)
+
+	F.Intrinsic.Control.EndIf
+
+F.ODBC.Con!rstInv.Close
+				F.Intrinsic.Control.EndIf
+'-------------------------------------------------------------------------------------------------------------------------------------------------
+					F.Intrinsic.Control.EndIf
+				F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+
+
+		F.Intrinsic.Control.Next(V.Local.iC)
+
+F.Automation.Generic.DestroyObject("Sheet1")
+F.Automation.Generic.DestroyObject("WKBK")
+F.Automation.Generic.DestroyObject("MSExcel")
+F.Intrinsic.Debug.Stop
+
+	F.Intrinsic.String.Concat(V.Ambient.DblQuote,"L",V.Caller.CompanyCode,V.Caller.Terminal,"Cwtrans.txt",V.Ambient.DblQuote,V.Local.sFile)
+'	F.Intrinsic.Task.LaunchGSSSync("WIR100","-dlex C:\trace.txt -c",V.Local.sFile)
+	F.Intrinsic.Task.LaunchGSSSync("WIR100","-c",V.Local.sFile)
+
+
+
+'add return variable to use when calling the Global program
+F.Intrinsic.Variable.AddRV("Param",V.Local.sFile)
+
+Program.Sub.Openfile_wir100.End
+
+Program.Sub.PrintReport.Start
+
+Variable.local.sName.declare(String)
+ Variable.local.sValue.declare(String)
+ Variable.local.sTemp.declare(String)
+V.Local.sPrgm.Declare(String)
+V.Local.sRptLoc.Declare(String)
+V.Local.lRptID.Declare(Long)
+
+
+F.Intrinsic.String.Concat(V.Caller.BusintDir,"\Custom\atg_3402_rcpts_to_wo.rpt",V.Local.sRptLoc)
+
+V.Local.sName.Set("TRMNL")
+v.Local.sValue.Set(V.Caller.Terminal)
+
+'Calls the report to be printed
+F.Global.BI.InitializeReport("Receipts To WorkOrder",V.Local.sRptLoc,V.Local.lRptID)
+Function.global.bi.printreport(V.Local.lRptID,0,Variable.Local.sName,V.Local.sValue,False)
+
+'V.Local.sRptLoc.Set("G:\Busint\Custom\atg_3402_rcpts_to_wo.rpt")
+'F.Global.BI.PrintReport(100102,0,V.Local.sName,V.Local.sValue,False)
+
+
+Program.Sub.PrintReport.End
+
+Program.Sub.ProgramEnd.Start
+
+
+F.ODBC.Connection!Con.Close
+F.Intrinsic.Control.End
+
+
+Program.Sub.ProgramEnd.End
+
+Program.Sub.FTP_Connect.Start
+
+V.Local.shold.Declare(String)
+V.Local.sLocal.Declare(String)
+V.Local.sRemote.Declare(String)
+V.Local.sret.Declare(String)
+
+
+
+
+
+F.Communication.FTP.ReadProperty("connected",V.Local.sret)
+F.Intrinsic.Control.If(V.local.sret,=,False)
+	F.Communication.FTP.SetProperty("RemoteHost","ftp://10.8.15.10")
+	F.Communication.FTP.SetProperty("User","DYNAVENTURECORP\ftpdyna")
+	F.Communication.FTP.SetProperty("Password","Upload#929")
+	F.Communication.FTP.SetProperty("remotePort","21")
+
+
+'	F.Communication.FTP.SetProperty("User","temp")
+'	F.Communication.FTP.SetProperty("Password","global")
+'	F.Communication.FTP.SetProperty("RemoteHost","192.0.0.113")
+'	F.Communication.FTP.SetProperty("remotePort","21")
+
+	F.Communication.FTP.Logon
+
+	F.Communication.FTP.ReadProperty("connected",V.Local.sret)
+	F.Intrinsic.Control.If(V.local.sret,=,True)
+		F.Communication.FTP.SetProperty("RemotePath","ftproot")
+			F.Communication.FTP.ListDirectorylong
+		F.Communication.FTP.Logoff
+	F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.endif
+
+
+
+Program.Sub.FTP_Connect.End
+
+Program.Sub.FTPDirEvent.Start
+
+V.Static.iC.Declare(Long)
+V.Local.sLocal.Declare(String)
+V.Local.bhere.Declare(Boolean)
+
+
+F.Intrinsic.String.Concat(V.Caller.FilesDir,"\Vending",V.Local.sLocal)
+	F.Intrinsic.File.Exists(V.Local.sLocal,V.Local.bhere)
+		F.Intrinsic.Control.If(V.Local.bhere,=,False)
+			F.Intrinsic.File.CreateDir(V.Local.sLocal)
+		F.Intrinsic.Control.EndIf
+
+F.Intrinsic.String.Concat(V.Local.sLocal,"\",V.Args.filename,V.Local.sLocal)
+
+	F.Communication.FTP.SetProperty("LocalFile",V.Local.sLocal)
+	F.Communication.FTP.SetProperty("RemoteFile",V.Args.filename)
+
+		F.Communication.FTP.SetProperty("TransferMode",2)
+		F.Communication.FTP.SetProperty("Overwrite",True)
+		F.Communication.FTP.Download
+
+'		F.Communication.FTP.DeleteFile(V.Args.filename)
+
+Program.Sub.FTPDirEvent.End
+
+
+
+Program.Sub.Comments.Start
+${$0$}$$}$$}$12:00:00 AM$}$False
+Program.Sub.Comments.End
